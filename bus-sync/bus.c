@@ -4,29 +4,32 @@
 
 struct station {
 
-    int passengerNum = 0;
-    lock lockBus;
-    condition cond_busLoading;
-    condition cond_passengerBoarding;
+    int passengerNum;
+    struct lock lockBus;
+    struct condition cond_busLoading;
+    struct condition cond_passengerBoarding;
 
 };
 
 void station_setup(struct station *station) {
+	station->passengerNum = 0;
+	lock_init(&station->lockBus);
+	cond_init(&station->cond_busLoading);
+	cond_init(&station->cond_passengerBoarding);
+}
+
+void bus_load_passengers(struct station *station, int count) {
     lock_acquire(&station->lockBus);
 
-    while (count > 0 && station->passengers > 0)
+    while (count > 0 && station->passengerNum > 0)
     {
         cond_signal(&station->cond_busLoading, &station->lockBus);
         count--;
-        station->passengers--;
+        station->passengerNum--;
         cond_wait(&station->cond_passengerBoarding, &station->lockBus);
     }
 
     lock_release(&station->lockBus);
-}
-
-void bus_load_passengers(struct station *station, int count) {
-
 }
 
 void passenger_waitfor_bus(struct station *station) {
